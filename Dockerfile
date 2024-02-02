@@ -1,26 +1,22 @@
-FROM ubuntu:20.04
-RUN DEBIAN_FRONTEND=noninteractive apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+FROM python:3.10
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
-    apt-transport-https \
-    apt-utils \
-    ca-certificates \
-    curl \
-    git \
-    iputils-ping \
-    jq \
-    lsb-release \
-    software-properties-common \
-    libicu66
+RUN apt update \
+    && apt upgrade -y \
+    && apt install -y curl git jq libicu-dev sudo
 
-RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+ENV TARGETARCH="linux-x64"
 
-ENV TARGETARCH=linux-x64
+WORKDIR /azp/
 
-WORKDIR /azp
+COPY ./start.sh ./
+RUN chmod +x ./start.sh
 
-COPY ./start.sh .
-RUN chmod +x start.sh
+RUN useradd agent
+RUN chown agent ./
+RUN echo "agent ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+USER agent
 
-ENTRYPOINT [ "./start.sh" ]
+# Another option is to run the agent as root.
+# ENV AGENT_ALLOW_RUNASROOT="true"
+
+ENTRYPOINT ./start.sh
